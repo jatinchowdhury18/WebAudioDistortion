@@ -1,5 +1,9 @@
 <!doctype html>
 <html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>                             
+<link href="https://cdnjs.cloudflare.com/ajax/libs/roundSlider/1.3.2/roundslider.min.css" rel="stylesheet"/>                            
+<script src="https://cdnjs.cloudflare.com/ajax/libs/roundSlider/1.3.2/roundslider.min.js"></script>
+
 <h1>Final Project: C++ to Web Audio Via WASM (Distortion)</h1>
 
 <p>
@@ -10,32 +14,81 @@ This project is a proof of concept for porting audio processing software made in
 To use this effect, plug in a MIDI keyboard of your choice, and press "Start". The distortion effect is off initially, use the "Bypass" button to toggle the effect on/off. To change the amount of distortion, or the cutoff frequency, just enter a new value, and press "Set". Enjoy! [Note that due to limitations of the Web MIDI API, this app will only work correctly in Google Chrome.]
 </p>
 
+<p>
+Thanks to Hongchan Choi, the Web Audio and Web MIDI APIs, and Kripken from Emscripten
+</p>
 
-<button data-playing="false" class="start-button" role="switch" aria-checked="false">
+<h2>Chowdhury Distortion</h2>
+
+<button data-playing="false" class="start-button" role="switch" aria-checked="false" style="float: left">
     <span>Start</span>
 </button>
-
-<p></p>
-
-<label for="distAmt">Distortion Amount: </label>
-<input name="distAmt" type="number" min="0" max="100" id="distAmt" class="dist-field"/>
-<button data-playing="false" class="dist-button" role="switch" aria-checked="false">
-    <span>Set</span>
-</button>
-
-<p></p>
-
-<label for="freq">Cutoff Frequency: </label>
-<input name="freq" type="number" min="0" max="100" id="freq" class="freq-field"/>
-<button data-playing="false" class="freq-button" role="switch" aria-checked="false">
-    <span>Set</span>
-</button>
-
-<p></p>
 
 <button data-playing="false" class="bypass-button" role="switch" aria-checked="false">
     <span>Bypass</span>
 </button>
+
+<p></p>
+
+<div id="distSlider"></div>
+<div id="freqSlider"></div>
+
+<p></p>
+
+<script>
+    $("#distSlider").roundSlider({
+        radius: 80,
+        width: 15,
+        handleSize: "24,24",
+        handleShape: "round",
+        sliderType: "min-range",
+        startAngle: -45,
+        endAngle: 225,
+        value: 40,
+        editableTooltip: "false",
+        tooltipFormat: "changeDistTooltip",
+        change: "distChange",
+        drag: "distChange"
+    });
+
+    function changeDistTooltip(e) {
+        var val = e.value;
+        return "Distortion: " + val;
+    }
+
+    function distChange (e) {
+        //console.log(e.value);
+    }
+</script>
+<script>
+    $("#freqSlider").roundSlider({
+        radius: 80,
+        width: 15,
+        handleSize: "24,24",
+        handleShape: "round",
+        sliderType: "min-range",
+        startAngle: -45,
+        endAngle: 225,
+        value: 40,
+        editableTooltip: "false",
+        tooltipFormat: "changeFreqTooltip",
+        change: "freqChange",
+        drag: "freqChange"
+    });
+
+    function changeFreqTooltip(e) {
+        var val = logFreq(e.value);
+        return "Cutoff: " + Math.round(val);
+    }
+
+    function freqChange (e) {
+        //console.log(logFreq(e.value));
+    }
+
+    function logFreq (percent) {
+        return 20000 * Math.pow(percent / 100, 5);
+    }
+</script>
 
     <script>
 	const startButton = document.querySelector ('.start-button');
@@ -83,18 +136,18 @@ To use this effect, plug in a MIDI keyboard of your choice, and press "Start". T
         console.log ("Setting bypass: " + distortionNode.parameters.get('bypass').value);
     }, false);
     ////////////////////
-    const distButton = document.querySelector('.dist-button');
+    const distSlide = document.querySelector('#distSlider');
 
-    distButton.addEventListener('click', function() {
-        const distValue = document.querySelector('.dist-field').value;
+    distSlide.addEventListener('mousemove', function() {
+        const distValue = $("#distSlider").roundSlider("getValue");
         distortionNode.parameters.get('dist').value = distValue;
         console.log ("Distortion amount: " + distValue);
     }, false);
     ////////////////////
-    const freqButton = document.querySelector('.freq-button');
+    const freqSlide = document.querySelector('#freqSlider');
 
-    freqButton.addEventListener('click', function() {
-        const freqValue = document.querySelector('.freq-field').value;
+    freqSlide.addEventListener('mousemove', function() {
+        const freqValue = 20000 * Math.pow($("#freqSlider").roundSlider("getValue") / 100, 5);
         distortionNode.parameters.get('freq').value = freqValue;
         console.log ("Cutoff Frequency: " + freqValue);
     }, false);
@@ -165,12 +218,49 @@ To use this effect, plug in a MIDI keyboard of your choice, and press "Start". T
 	}, false);
     </script>
 
-<p>
-</p>
+<style>
+        #distSlider .rs-range-color  {
+            background-color: #8b0000;
+        }
+        #distSlider .rs-path-color  {
+            background-color: #dedede;
+        }
+        #distSlider .rs-handle  {
+            background-color: #000000;
+            cursor: pointer;
+        }
+        #distSlider .rs-border  {
+            border-color: white;
+        }
+        #distSlider .rs-tooltip  {
+            top: 115%;  
+        }
+</style>
+<style>
+    #freqSlider {
+        float: left;
+        position: absolute;
+        left: 200px;
+        top: 364px;
+    }
 
-<p>
-Thanks to Hongchan Choi, the Web Audio and Web MIDI APIs, and Kripken from Emscripten
-</p>
+    #freqSlider .rs-range-color  {
+        background-color: #8b0000;
+    }
+    #freqSlider .rs-path-color  {
+        background-color: #dedede;
+    }
+    #freqSlider .rs-handle  {
+        background-color: #000000;
+        cursor: pointer;
+    }
+    #freqSlider .rs-border  {
+        border-color: white;
+    }
+    #freqSlider .rs-tooltip  {
+            top: 115%;  
+    }
+</style>
 
 
 </html>
