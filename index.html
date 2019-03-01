@@ -1,23 +1,21 @@
 <!doctype html>
 <html>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>                             
 <link href="https://cdnjs.cloudflare.com/ajax/libs/roundSlider/1.3.2/roundslider.min.css" rel="stylesheet"/>                            
 <script src="https://cdnjs.cloudflare.com/ajax/libs/roundSlider/1.3.2/roundslider.min.js"></script>
-<script src='https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js'></script>
-<script src='https://surikov.github.io/webaudiofontdata/sound/0000_JCLive_sf2_file.js'></script>
 
 <h1>Final Project: C++ to Web Audio Via WASM (Distortion)</h1>
 
 <p>
-    This project is a proof of concept for porting audio processing software made in C++ to Web Audio. Web Audio utilizes processing nodes written in JavaScript. Using a compiling tool called "Emscripten" is is possible to compile C/C++ into Web Assmembly (WASM), and then from WASM into JavaScript. To test this process, I took a distortion effect I made a few years ago, compiled it into WASM, and wrapped it into a Web Audio AudioProcessorNode in JavaScript. I also made a simple mono sine MIDI synth in JavaScript to provide audio input for the effect.
+This project is a proof of concept for porting audio processing software made in C++ to Web Audio. Web Audio utilizes processing nodes written in JavaScript. Using a compiling tool called "Emscripten" is is possible to compile C/C++ into Web Assmembly (WASM), and then from WASM into JavaScript. To test this process, I took a distortion effect I made a few years ago, compiled it into WASM, and wrapped it into a Web Audio AudioProcessorNode in JavaScript. I also made a simple mono sine MIDI synth in JavaScript to provide audio input for the effect.
 </p>
 
 <p>
-    To use this effect, plug in a MIDI keyboard of your choice, and press "Start". The distortion effect is off initially, use the "Bypass" button to toggle the effect on/off. To change the amount of distortion, or the cutoff frequency, just enter a new value, and press "Set". Enjoy! [Note that due to limitations of the Web MIDI API, this app will only work correctly in Google Chrome.]
+To use this effect, plug in a MIDI keyboard of your choice, and press "Start". The distortion effect is off initially, use the "Bypass" button to toggle the effect on/off. To change the amount of distortion, or the cutoff frequency, just enter a new value, and press "Set". Enjoy! [Note that due to limitations of the Web MIDI API, this app will only work correctly in Google Chrome.]
 </p>
 
 <p>
-    Thanks to Hongchan Choi, the Web Audio and Web MIDI APIs, and Kripken from Emscripten
+Thanks to Hongchan Choi, the Web Audio and Web MIDI APIs, and Kripken from Emscripten
 </p>
 
 <h2>Chowdhury Distortion</h2>
@@ -26,18 +24,9 @@
     <span>Start</span>
 </button>
 
-<!-- <button data-playing="false" class="bypass-button" role="switch" aria-checked="false">
+<button data-playing="false" class="bypass-button" role="switch" aria-checked="false">
     <span>Bypass</span>
-</button> -->
-</br>
-<!-- </br> -->
-
-<p><select id='ins' onchange="selectIns(this)"></select></p>
-
-<div>
-    <span>Bypass</span>
-    <input type="checkbox" id="bypass" />
-</div>
+</button>
 
 <p></p>
 
@@ -55,7 +44,7 @@
         sliderType: "min-range",
         startAngle: -45,
         endAngle: 225,
-        value: 50,
+        value: 40,
         editableTooltip: "false",
         tooltipFormat: "changeDistTooltip",
         change: "distChange",
@@ -67,10 +56,11 @@
         return "Distortion: " + val;
     }
 
-    // function distChange (e) {
-    //     //console.log(e.value);
-    // }
-
+    function distChange (e) {
+        //console.log(e.value);
+    }
+</script>
+<script>
     $("#freqSlider").roundSlider({
         radius: 80,
         width: 15,
@@ -79,15 +69,12 @@
         sliderType: "min-range",
         startAngle: -45,
         endAngle: 225,
-        value: 72,
+        value: 40,
         editableTooltip: "false",
         tooltipFormat: "changeFreqTooltip",
         change: "freqChange",
         drag: "freqChange"
     });
-
-    const distSlide = document.querySelector('#distSlider');
-    const freqSlide = document.querySelector('#freqSlider');
 
     function changeFreqTooltip(e) {
         var val = logFreq(e.value);
@@ -101,290 +88,180 @@
     function logFreq (percent) {
         return 20000 * Math.pow(percent / 100, 5);
     }
+</script>
 
-    const startButton = document.querySelector ('.start-button');
+    <script>
+	const startButton = document.querySelector ('.start-button');
 
-    ////////////////////
-    const context = new AudioContext();
-    console.log (context.sampleRate);
-    const gain = new GainNode (context);
-
-    const oscillator = new OscillatorNode (context);
-    oscillator.connect (gain);
-
-    const compressor = context.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-50, context.currentTime);
-    compressor.knee.setValueAtTime(40, context.currentTime);
-    compressor.ratio.setValueAtTime(12, context.currentTime);
-    compressor.attack.setValueAtTime(0, context.currentTime);
-    compressor.release.setValueAtTime(0.25, context.currentTime);
-
-    ////////////////////
-    var instr = false;
-    var distortionNode = null;
-    var tone = _tone_0000_JCLive_sf2_file;
-    console.log(tone.zones.length);
-    var ahdsr= [{
-                    duration: 0,
-                    volume: 0.4
-                }, {
-                    duration: 0.2,
-                    volume: 1
-                }, {
-                    duration: 0.3,
-                    volume: 0.5
-                }, {
-                    duration: 0.3,
-                    volume: 0
-                }];
-    for (var i = 0; i < tone.zones.length; i++) {
-        tone.zones[i].ahdsr = ahdsr;
-    }
-    const player = new WebAudioFontPlayer();
-    var midiNotes = [];
-    player.loader.decodeAfterLoading(context, '_tone_0000_JCLive_sf2_file');
-    const fontGain = new GainNode(context);
-
-    var sel = document.getElementById('ins');
-    var opt = document.createElement('option');
-    opt.innerHTML = '0. sine wave';
-    sel.appendChild(opt);
-    for(var i = 0; i < player.loader.instrumentKeys().length; i++) {
-        var opt = document.createElement('option');
-        opt.innerHTML = ''+(i+1)+'. '+player.loader.instrumentInfo(i).title;
-        sel.appendChild(opt);
-    }
-
-    function selectIns(o){
-        var n=document.getElementById('ins').selectedIndex-1;
-        if (n===-1) {
-            instr = false;
-            fontGain.disconnect();
-            if (distortionNode)
-                gain.connect(distortionNode);
-            return;
-        }
-        instr = true;
-        gain.disconnect();
-        if (distortionNode)
-            fontGain.connect(distortionNode);
-        var info=player.loader.instrumentInfo(n)
-        console.log('select',n,info);
-        player.loader.startLoad(context, info.url, info.variable);
-        player.loader.waitLoad(function () {
-            console.log('done',info.variable);
-            tone=window[info.variable];
-            for (var i = 0; i < tone.zones.length; i++) {
-                tone.zones[i].ahdsr = ahdsr;
-            }
-            player.cancelQueue(context);
-        });
-    }
-    ////////////////////   
-
-    startButton.addEventListener ('click', function () {
+	startButton.addEventListener ('click', function () {
 
         navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
 
-        oscillator.start();
+	const context = new AudioContext();
+	console.log (context.sampleRate);
+	const gain = new GainNode (context);
 
-        gain.gain.setValueAtTime (0.0, context.currentTime);
+	const oscillator = new OscillatorNode (context);
+	oscillator.connect (gain);
+	oscillator.start();
 
-        var attack = 0.05;
-        var release = 0.05;
-        var portamento = 0.0;
-        var activeNotes = [];
-    	//gain.connect (context.destination);
+	gain.gain.setValueAtTime (0.0, context.currentTime);
 
-    	context.audioWorklet.addModule('worklet-processor.js').then(() => {
-            // After the resolution of module loading, an AudioWorkletNode can be
-            // constructed.
-            distortionNode = new AudioWorkletNode(context, 'worklet-processor');
+	var attack = 0.05;
+	var release = 0.05;
+	var portamento = 0.0;
+	var activeNotes = [];
+	//gain.connect (context.destination);
 
-            distortionNode.parameters.get('dist').value = $("#distSlider").roundSlider("getValue");;
-            console.log ("Distortion amount: " + distortionNode.parameters.get('dist').value);
-            distortionNode.parameters.get('freq').value = 20000 * Math.pow($("#freqSlider").roundSlider("getValue") / 100, 5);
-            console.log ("Cutoff Frequency: " + distortionNode.parameters.get('freq').value);
-            distortionNode.parameters.get('bypass').value = false;   
+	context.audioWorklet.addModule('worklet-processor.js').then(() => {
+    let oscillator = new OscillatorNode(context);
 
-            ////////////////////
-            const bypassCheckbox = document.querySelector('#bypass');
+    // After the resolution of module loading, an AudioWorkletNode can be
+    // constructed.
+    var distortionNode = new AudioWorkletNode(context, 'worklet-processor');
 
-            bypassCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    distortionNode.parameters.get('bypass').value = true;
-                } else {
-                    distortionNode.parameters.get('bypass').value = false;
-                }
-                console.log ("Setting bypass: " + distortionNode.parameters.get('bypass').value);
-            }, false);
-            ////////////////////
+    distortionNode.parameters.get('dist').value = 100.0;
+    console.log ("Distortion amount: " + distortionNode.parameters.get('dist').value);
 
-            distSlide.addEventListener('mousemove', function() {
-                const distValue = $("#distSlider").roundSlider("getValue");
-                // distortionNode.parameters.get('dist').value = distValue;
-                distortionNode.parameters.get('dist').linearRampToValueAtTime(distValue, context.currentTime+0.1);
-                console.log ("Distortion amount: " + distValue);
-            }, false);
-            ////////////////////
+    ////////////////////
+    const bypassButton = document.querySelector('.bypass-button');
 
-            freqSlide.addEventListener('mousemove', function() {
-                const freqValue = 20000 * Math.pow($("#freqSlider").roundSlider("getValue") / 100, 5);
-                // distortionNode.parameters.get('freq').value = freqValue;
-                distortionNode.parameters.get('freq').linearRampToValueAtTime(freqValue, context.currentTime+0.1);
-                console.log ("Cutoff Frequency: " + freqValue);
-            }, false);
-            ////////////////////
-            if (instr) {
-                fontGain.connect (distortionNode).connect(compressor).connect (context.destination);
-            } else {
-                gain.connect (distortionNode).connect(compressor).connect (context.destination);
-            }
-            
-        });
+    bypassButton.addEventListener('click', function() {
+        // play or pause track depending on state
+        if (distortionNode.parameters.get('bypass').value == false) {
+            distortionNode.parameters.get('bypass').value = true;
+        } else if (distortionNode.parameters.get('bypass').value == true) {
+            distortionNode.parameters.get('bypass').value = false;
+        }
+        console.log ("Setting bypass: " + distortionNode.parameters.get('bypass').value);
+    }, false);
+    ////////////////////
+    const distSlide = document.querySelector('#distSlider');
+
+    distSlide.addEventListener('mousemove', function() {
+        const distValue = $("#distSlider").roundSlider("getValue");
+        distortionNode.parameters.get('dist').value = distValue;
+        console.log ("Distortion amount: " + distValue);
+    }, false);
+    ////////////////////
+    const freqSlide = document.querySelector('#freqSlider');
+
+    freqSlide.addEventListener('mousemove', function() {
+        const freqValue = 20000 * Math.pow($("#freqSlider").roundSlider("getValue") / 100, 5);
+        distortionNode.parameters.get('freq').value = freqValue;
+        console.log ("Cutoff Frequency: " + freqValue);
+    }, false);
+    ////////////////////
+    gain.connect (distortionNode).connect (context.destination);
+    });
+
 
         function onMIDISuccess(midiAccess) {
-            console.log(midiAccess);
+    	    console.log(midiAccess);
 
             for (var input of midiAccess.inputs.values()) {
                 input.onmidimessage = getMidiMessage;
-            }
+	    }
         }
 
-        function getMidiMessage (message) {
-            var command = message.data[0];
-            var note = message.data[1];
+	function getMidiMessage (message) {
+	    var command = message.data[0];
+	    var note = message.data[1];
             var velocity = (message.data.length > 2) ? message.data[2] : 0;
 
-            switch (command) {
-                case 144: //noteOn
-                    if (velocity > 0) {
-                        if (instr) {
-                            midNoteOn(note, velocity);
-                        } else {
-                            noteOn (note, velocity);
-                        }
-                    } else {
-                        if (instr) {
-                            midiNoteOff(note);
-                        } else {
-                            noteOff (note);
-                        }
-                    }
-                    break;
-                case 128: //noteOff
-                    if (instr) {
-                        midiNoteOff(note);
-                    } else {
-                        noteOff (note);
-                    }
-                    break;
-            }
-        }
+	    switch (command) {
+		case 144: //noteOn
+		    if (velocity > 0)
+			noteOn (note, velocity);
+		    else
+			noteOff (note);
+		    break;
+		case 128: //noteOff
+		    noteOff (note);
+		    break;
+	    }
+	}
 
-        function freqFromNoteNum (note) {
-            return Math.pow (2.0, ((note - 69.0)/12.0)) * 440;
-        }
+	function freqFromNoteNum (note) {
+	    return Math.pow (2.0, ((note - 69.0)/12.0)) * 440;
+	}
 
-        ////////////////////
-        function midNoteOn(pitch, velocity) {
-            midiNoteOff(pitch);
-            var envelope = player.queueWaveTable(context, fontGain, tone, 0, pitch, 123456789, velocity / 100);
-            var note = {
-                pitch: pitch,
-                envelope: envelope
-            };
-            midiNotes.push(note);
-        }
+	function noteOn (note, velocity) {
+	    activeNotes.push(note);
+	    var freq = freqFromNoteNum (note);
+	    oscillator.frequency.cancelScheduledValues (0);
+	    oscillator.frequency.setTargetAtTime (freq, 0, portamento);
+	    gain.gain.cancelScheduledValues (0);
+	    gain.gain.setTargetAtTime (0.5, 0, attack);
+	    console.log ("playing: " + freq);
+	}
 
-        function midiNoteOff(pitch) {
-            for (var i = 0; i < midiNotes.length; i++) {
-                if (midiNotes[i].pitch == pitch) {
-                    if (midiNotes[i].envelope) {
-                        midiNotes[i].envelope.cancel();
-                    }
-                    midiNotes.splice(i, 1);
-                    return;
-                }
-            }
-        }
-        ////////////////////
-
-        function noteOn (note, velocity) {
-            activeNotes.push(note);
-            var freq = freqFromNoteNum (note);
-            oscillator.frequency.cancelScheduledValues (0);
-            oscillator.frequency.setTargetAtTime (freq, 0, portamento);
-            gain.gain.cancelScheduledValues (0);
-            gain.gain.setTargetAtTime (0.5, 0, attack);
-            console.log ("playing: " + freq);
-        }
-
-        function noteOff (note) {
-            var position = activeNotes.indexOf (note);
-            if (position != -1) {
-                activeNotes.splice (position, 1);
-            }
-            if (activeNotes.length == 0) {
-                gain.gain.cancelScheduledValues (0);
-                gain.gain.setTargetAtTime (0.0, 0, release);
-            }
-            else {
-                var freq = freqFromNoteNum (activeNotes[activeNotes.length - 1]);
-                oscillator.frequency.cancelScheduledValues (0);
-                oscillator.frequency.setTargetAtTime (freq, 0, portamento);
-            }
-        }
+	function noteOff (note) {
+	    var position = activeNotes.indexOf (note);
+	    if (position != -1) {
+		activeNotes.splice (position, 1);
+	    }
+	    if (activeNotes.length == 0) {
+		gain.gain.cancelScheduledValues (0);
+		gain.gain.setTargetAtTime (0.0, 0, release);
+	    }
+	    else {
+	        var freq = freqFromNoteNum (activeNotes[activeNotes.length - 1]);
+		oscillator.frequency.cancelScheduledValues (0);
+		oscillator.frequency.setTargetAtTime (freq, 0, portamento);
+	    }
+	}
 
         function onMIDIFailure() {
             console.log('Could not access your MIDI devices.');
         }
-    }, false);
-</script>
+	}, false);
+    </script>
 
 <style>
-#distSlider {
-   float: left;
-   margin: 10px;
-}
-#distSlider .rs-range-color  {
-    background-color: #8b0000;
-}
-#distSlider .rs-path-color  {
-    background-color: #dedede;
-}
-#distSlider .rs-handle  {
-    background-color: #000000;
-    cursor: pointer;
-}
-#distSlider .rs-border  {
-    border-color: white;
-}
-#distSlider .rs-tooltip  {
-    top: 115%;  
-}
-
-#freqSlider {
+	#distSlider {
+	    float: left;
+	    margin: 10px;
+        }
+        #distSlider .rs-range-color  {
+            background-color: #8b0000;
+        }
+        #distSlider .rs-path-color  {
+            background-color: #dedede;
+        }
+        #distSlider .rs-handle  {
+            background-color: #000000;
+            cursor: pointer;
+        }
+        #distSlider .rs-border  {
+            border-color: white;
+        }
+        #distSlider .rs-tooltip  {
+            top: 115%;  
+        }
+</style>
+<style>
+    #freqSlider {
 	float: left;
 	margin: 10px;
-}
+    }
 
-#freqSlider .rs-range-color  {
-    background-color: #8b0000;
-}
-#freqSlider .rs-path-color  {
-    background-color: #dedede;
-}
-#freqSlider .rs-handle  {
-    background-color: #000000;
-    cursor: pointer;
-}
-#freqSlider .rs-border  {
-    border-color: white;
-}
-#freqSlider .rs-tooltip  {
-    top: 115%;  
-}
+    #freqSlider .rs-range-color  {
+        background-color: #8b0000;
+    }
+    #freqSlider .rs-path-color  {
+        background-color: #dedede;
+    }
+    #freqSlider .rs-handle  {
+        background-color: #000000;
+        cursor: pointer;
+    }
+    #freqSlider .rs-border  {
+        border-color: white;
+    }
+    #freqSlider .rs-tooltip  {
+            top: 115%;  
+    }
 </style>
 
 
